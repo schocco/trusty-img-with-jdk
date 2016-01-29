@@ -1,0 +1,41 @@
+- hosts: all
+  become: true
+  vars:
+    - java_home: /usr/lib/jvm/java-7-openjdk-amd64
+  tasks:
+    
+    - name: "ensure python-apt is installed."
+      apt: name="python-apt" state=present
+
+    - name: add ppa for java
+      apt_repository: repo='ppa:openjdk-r/ppa' update_cache=yes
+
+    - name: Install packages
+      apt: name={{item}} state=present cache_valid_time=120 update_cache=yes
+      with_items:
+        - "supervisor"
+        - "ruby"
+        - "ruby-dev"
+        - "openjdk-7-jdk"
+        - "nginx-core"
+
+    - name: set java home
+      copy: dest="/etc/profile.d/jdk.sh" content="export JAVA_HOME={{ java_home }}" mode=0754
+
+    - name: download chef installer
+      get_url: url=https://www.chef.io/chef/install.sh dest=/tmp/install_chef.sh mode=0744
+
+    - name: install chef
+      shell: /tmp/install_chef.sh
+
+    - name: create .ssh directory
+      file: path="/home/vagrant/.ssh" state=directory owner=vagrant group=vagrant mode=0760
+
+    - name: add vagrant ssh key
+      get_url: url='https://raw.github.com/mitchellh/vagrant/master/keys/vagrant.pub' dest="/home/vagrant/.ssh/authorized_keys"
+
+    - name: set key attributes
+      file: path="/home/vagrant/.ssh/authorized_keys" mode=0640 owner=vagrant group=vagrant
+
+    - name: allow vagrant user to sudo without pw
+      copy: dest=/etc/sudoers.d/vagrant content='vagrant ALL=(ALL) NOPASSWD:ALL' validate='visudo -cf %s' owner=root group=root

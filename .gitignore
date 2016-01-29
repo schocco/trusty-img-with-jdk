@@ -1,0 +1,7 @@
+packer_cache
+.vagrant
+*.tar
+*~
+*/*~
+*.box
+vars
